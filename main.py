@@ -109,6 +109,23 @@ def summarize_prompt(req: SummarizeRequest) -> List[dict]:
             "- If evidence is in documents, include citations for those points.\n"
             "- Output JSON only."
         )
+        example = (
+            "Example:\n"
+            "Input text:\n"
+            "The beta rollout improved performance but raised hosting costs. "
+            "Support tickets dropped after fixing login issues.\n"
+            "Documents:\n"
+            "- id: ex-1\n"
+            "  title: Beta Report\n"
+            "  source: internal\n"
+            "  content: Performance improved 15%; hosting costs +10%. "
+            "Login bug fix reduced tickets.\n"
+            "Output JSON:\n"
+            '{ "summary": "- Performance improved 15% during beta.\n'
+            '- Hosting costs rose 10%.\n'
+            '- Login fix reduced support tickets.", '
+            '"citations": [{"id": "ex-1", "source": "internal"}] }'
+        )
     elif req.prompt_variant == "C":
         system = (
             "You are a project analyst in a multi-agent RAG workflow. Summaries "
@@ -118,8 +135,10 @@ def summarize_prompt(req: SummarizeRequest) -> List[dict]:
             "- If summary_type is bullet, use 3–7 bullets.\n"
             "- Maintain neutral tone; do not add new information.\n"
             "- Use citations when documents are provided.\n"
+            "- Think step-by-step internally, but output only the final JSON.\n"
             "- Output JSON only."
         )
+        example = ""
     else:
         system = (
             "You are a precise summarizer in a multi-agent RAG system. When "
@@ -132,9 +151,11 @@ def summarize_prompt(req: SummarizeRequest) -> List[dict]:
             f"- Keep within max_words (soft limit): {req.max_words}.\n"
             "- Output JSON only."
         )
+        example = ""
 
     user = (
         "Task: Summarize the input text into the requested format and length.\n\n"
+        f"{example}\n\n"
         f"Input text:\n{req.input_text}\n\n"
         f"Documents:\n{documents_text}\n\n"
         f"summary_type: {req.summary_type}\n"
@@ -158,6 +179,21 @@ def sentiment_prompt(req: AnalyzeSentimentRequest) -> List[dict]:
             "- Keep rationales to one sentence each.\n"
             "- Output JSON only."
         )
+        example = (
+            "Example:\n"
+            "Input text:\n"
+            "The app is smooth, but the subscription fee is steep.\n"
+            "granularity: aspect\n"
+            "aspects: performance, pricing\n"
+            "Output JSON:\n"
+            '{ "sentiment": "mixed", "confidence": 0.8, '
+            '"rationale": "Positive on performance, negative on pricing.", '
+            '"aspect_sentiments": ['
+            '{"aspect": "performance", "sentiment": "positive", "confidence": 0.9, '
+            '"rationale": "Smooth experience."}, '
+            '{"aspect": "pricing", "sentiment": "negative", "confidence": 0.8, '
+            '"rationale": "Fee is steep."}]}'
+        )
     elif req.prompt_variant == "C":
         system = (
             "You are a strict, evidence-grounded sentiment classifier in a RAG pipeline."
@@ -165,8 +201,10 @@ def sentiment_prompt(req: AnalyzeSentimentRequest) -> List[dict]:
         constraints = (
             "- If evidence conflicts, choose mixed and state the conflict briefly.\n"
             "- Avoid hedging language; express confidence numerically.\n"
+            "- Think step-by-step internally, but output only the final JSON.\n"
             "- Output JSON only."
         )
+        example = ""
     else:
         system = (
             "You are a sentiment analyst in a multi-agent RAG system. Ground sentiment "
@@ -177,10 +215,12 @@ def sentiment_prompt(req: AnalyzeSentimentRequest) -> List[dict]:
             "- If sentiment is mixed, explain briefly why.\n"
             "- Output JSON only."
         )
+        example = ""
 
     aspects_text = ", ".join(req.aspects or [])
     user = (
         "Task: Determine sentiment and confidence for the input text.\n\n"
+        f"{example}\n\n"
         f"Input text:\n{req.input_text}\n\n"
         f"Documents:\n{documents_text}\n\n"
         f"granularity: {req.granularity}\n"
